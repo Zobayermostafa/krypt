@@ -48,7 +48,7 @@ from difference import (
     summarize_difference,
     save_difference_image,
 )
-from keys import generate_key, format_key, parse_key, derive_masks
+from keys import generate_key_pair, format_key_pair, parse_key, derive_masks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -195,24 +195,24 @@ BAD_INPUT_ERRORS = (UnidentifiedImageError, ValueError)
 # ---------------------------------------------------------------------------
 # CPU-bound jobs (run in a worker thread so the event loop stays responsive)
 # ---------------------------------------------------------------------------
-def encrypt_job(input_path: Path, session_dir: Path) -> str:
+def encrypt_job(input_path: Path, session_dir: Path) -> tuple[str, str]:
     check_pixel_limit(input_path)
     img_array = load_color_image(input_path)
 
-    key = generate_key()
-    mask1, mask2 = derive_masks(key, img_array.shape[:2])
+    seed1, seed2 = generate_key_pair()
+    mask1, mask2 = derive_masks(seed1, seed2, img_array.shape[:2])
     ciphertexts = [encrypt(img_array[:, :, i], mask1, mask2) for i in range(3)]
 
     save_color_ciphertext_png(ciphertexts, str(session_dir / "encrypted.png"))
-    return format_key(key)
+    return format_key_pair(seed1, seed2)
 
 
-def decrypt_job(session_dir: Path, key: bytes):
+def decrypt_job(session_dir: Path, seed1: bytes, seed2: bytes):
     enc_path = session_dir / "encrypted.png"
     check_pixel_limit(enc_path)
 
     ciphertexts = load_color_ciphertext_png(str(enc_path))
-    m1, m2 = derive_masks(key, ciphertexts[0].shape)
+    m1, m2 = derive_masks(seed1, seed2, ciphertexts[0].shape)
 
     recovered = [decrypt(ct, m1, m2) for ct in ciphertexts]
     save_color_image(np.stack(recovered, axis=-1), session_dir / "decrypted.png")
@@ -254,7 +254,7 @@ async def api_encrypt(
 
     try:
         await save_upload(image, input_path)
-        key_string = await run_in_threadpool(encrypt_job, input_path, session_dir)
+        key1_string, key2_string = await run_in_threadpool(encrypt_job, input_path, session_dir)
     except HTTPException:
         remove_session_dir(session_dir)
         raise
@@ -274,11 +274,14 @@ async def api_encrypt(
     return JSONResponse(
         {
             "session_id": session_id,
-            "key": key_string,
+            "key1": key1_string,
+            "key2": key2_string,
+            # Maintain backward compatibility in case anything inspects 'key'
+            "key": f"{key1_string}\n{key2_string}",
             "files": {"encrypted_image": download_url(session_id, "encrypted.png")},
-            "message": "Encryption successful. Save your key: without it the image cannot be recovered.",
+            "message": "Encryption successful. Save both keys: without both of them the image cannot be recovered.",
         },
-        headers={"Cache-Control": "no-store"},  # response contains the secret key
+        headers={"Cache-Control": "no-store"},  # response contains secret keys
     )
 
 
@@ -286,10 +289,12 @@ async def api_encrypt(
 async def api_decrypt(
     background_tasks: BackgroundTasks,
     encrypted_image: UploadFile = File(..., description="Encrypted .png file"),
-    key: str = Form(..., description="Key string starting with drpe1-"),
+    key1: str = Form(..., description="Key 1 string starting with drpe1-m1-"),
+    key2: str = Form(..., description="Key 2 string starting with drpe1-m2-"),
 ):
     try:
-        key_bytes = parse_key(key)
+        seed1 = parse_key(key1, expected_mask_index=1)
+        seed2 = parse_key(key2, expected_mask_index=2)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Invalid key: {exc}")
 
@@ -297,7 +302,7 @@ async def api_decrypt(
 
     try:
         await save_upload(encrypted_image, session_dir / "encrypted.png")
-        await run_in_threadpool(decrypt_job, session_dir, key_bytes)
+        await run_in_threadpool(decrypt_job, session_dir, seed1, seed2)
     except HTTPException:
         remove_session_dir(session_dir)
         raise
@@ -314,7 +319,7 @@ async def api_decrypt(
     return JSONResponse({
         "session_id": session_id,
         "files": {"decrypted_image": download_url(session_id, "decrypted.png")},
-        "message": "Decryption complete. If the key does not match this image, the result will look like noise.",
+        "message": "Decryption complete. If the keys do not match this image, the result will look like noise.",
     })
 
 

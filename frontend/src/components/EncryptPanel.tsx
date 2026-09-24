@@ -5,7 +5,9 @@ import DownloadLink from './DownloadLink'
 
 interface EncryptResult {
   session_id: string
-  key: string
+  key1: string
+  key2: string
+  key?: string
   files: { encrypted_image: string }
   message: string
 }
@@ -15,7 +17,9 @@ export default function EncryptPanel() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<EncryptResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [copied1, setCopied1] = useState(false)
+  const [copied2, setCopied2] = useState(false)
+  const [copiedAll, setCopiedAll] = useState(false)
 
   const handleEncrypt = async () => {
     if (!image) return
@@ -32,36 +36,43 @@ export default function EncryptPanel() {
     } finally { setLoading(false) }
   }
 
-  const copyKey = async () => {
-    if (!result) return
+  const copyText = async (text: string, setCopiedState: (v: boolean) => void) => {
     try {
-      await navigator.clipboard.writeText(result.key)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(text)
+      setCopiedState(true)
+      setTimeout(() => setCopiedState(false), 2000)
     } catch {
       setError('Could not copy automatically. Select the key and copy it manually.')
     }
   }
 
-  const downloadKey = () => {
+  const downloadKeys = () => {
     if (!result) return
-    const blob = new Blob([result.key + '\n'], { type: 'text/plain' })
+    const content = `Key 1 (Spatial Mask):\n${result.key1}\n\nKey 2 (Fourier Mask):\n${result.key2}\n`
+    const blob = new Blob([content], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'drpe-key.txt'
+    a.download = 'drpe-keys.txt'
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
-  const reset = () => { setImage(null); setResult(null); setError(null); setCopied(false) }
+  const reset = () => {
+    setImage(null)
+    setResult(null)
+    setError(null)
+    setCopied1(false)
+    setCopied2(false)
+    setCopiedAll(false)
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-white mb-1">Encrypt Photo</h2>
         <p className="text-sm text-gray-400">
-          Upload any photo. DRPE generates an encrypted PNG and one secret key that unlocks it.
+          Upload any photo. DRPE generates an encrypted PNG and two separate keys that unlock it.
         </p>
       </div>
 
@@ -91,23 +102,69 @@ export default function EncryptPanel() {
             <p className="text-xs text-emerald-300/80 mt-1">{result.message}</p>
           </div>
 
-          <div className="rounded-xl bg-gray-950/60 border border-gray-800 p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-gray-200">Your secret key</h3>
-            <code className="block w-full break-all select-all rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-indigo-300 font-mono">
-              {result.key}
-            </code>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button onClick={copyKey}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-white text-sm font-semibold rounded-xl border border-gray-700 transition-all">
-                {copied ? '✅ Copied' : '📋 Copy key'}
+          <div className="rounded-xl bg-gray-950/60 border border-gray-800 p-6 space-y-5">
+            <div>
+              <h3 className="text-base font-semibold text-gray-200">Your Two Secret Keys</h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Both keys are required to decrypt. Key 1 unlocks the spatial phase; Key 2 unlocks the Fourier domain phase.
+              </p>
+            </div>
+
+            {/* Key 1 */}
+            <div className="space-y-2 p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
+                  Key 1 (Spatial Mask)
+                </span>
+                <button
+                  onClick={() => copyText(result.key1, setCopied1)}
+                  className="text-xs text-gray-300 hover:text-white px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded-md border border-gray-700 transition-all"
+                >
+                  {copied1 ? '✅ Copied' : '📋 Copy'}
+                </button>
+              </div>
+              <code className="block w-full break-all select-all rounded-lg bg-gray-950 border border-gray-700/80 px-3 py-2 text-xs text-indigo-300 font-mono">
+                {result.key1}
+              </code>
+            </div>
+
+            {/* Key 2 */}
+            <div className="space-y-2 p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
+                  Key 2 (Fourier Mask)
+                </span>
+                <button
+                  onClick={() => copyText(result.key2, setCopied2)}
+                  className="text-xs text-gray-300 hover:text-white px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded-md border border-gray-700 transition-all"
+                >
+                  {copied2 ? '✅ Copied' : '📋 Copy'}
+                </button>
+              </div>
+              <code className="block w-full break-all select-all rounded-lg bg-gray-950 border border-gray-700/80 px-3 py-2 text-xs text-purple-300 font-mono">
+                {result.key2}
+              </code>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <button
+                onClick={() => copyText(`${result.key1}\n${result.key2}`, setCopiedAll)}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-white text-sm font-semibold rounded-xl border border-gray-700 transition-all"
+              >
+                {copiedAll ? '✅ Copied Both' : '📋 Copy Both Keys'}
               </button>
-              <button onClick={downloadKey}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-white text-sm font-semibold rounded-xl border border-gray-700 transition-all">
-                🔑 Save key as file
+              <button
+                onClick={downloadKeys}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-white text-sm font-semibold rounded-xl border border-gray-700 transition-all"
+              >
+                🔑 Save keys (.txt)
               </button>
             </div>
+
             <div className="rounded-lg bg-amber-950/30 border border-amber-700/40 p-3 text-xs text-amber-300/90">
-              ⚠️ <strong>Save this key now.</strong> It is not stored on the server, so if you lose it the image cannot be recovered. Anyone with the key can decrypt the image.
+              ⚠️ <strong>Save both keys now.</strong> They are not stored on the server. If either key is lost, the image cannot be recovered.
             </div>
           </div>
 
