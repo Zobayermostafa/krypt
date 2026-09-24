@@ -2,6 +2,7 @@ import { useState } from 'react'
 import DropZone from './DropZone'
 import Spinner from './Spinner'
 import DownloadLink from './DownloadLink'
+import Icon from './Icon'
 
 interface DecryptResult {
   session_id: string
@@ -163,7 +164,7 @@ export default function DecryptPanel() {
           ) : (
             <button onClick={handleDecrypt} disabled={!canSubmit}
               className="w-full py-3.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-              🔓 Decrypt Photo
+              <span className="inline-flex items-center justify-center gap-2"><Icon name="lock" size={16} /> Decrypt Photo</span>
             </button>
           )}
         </div>

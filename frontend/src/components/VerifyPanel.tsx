@@ -2,6 +2,7 @@
 import DropZone from './DropZone'
 import Spinner from './Spinner'
 import DownloadLink from './DownloadLink'
+import Icon from './Icon'
 
 interface VerifyResult {
   session_id: string
@@ -65,7 +66,7 @@ export default function VerifyPanel() {
           ) : (
             <button onClick={handleVerify} disabled={!canSubmit}
               className="w-full py-3.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-              ✅ Verify Photo Match
+              <span className="inline-flex items-center justify-center gap-2"><Icon name="verify" size={16} /> Verify Photo Match</span>
             </button>
           )}
         </div>

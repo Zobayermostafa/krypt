@@ -1,3 +1,5 @@
+import Icon from './Icon'
+
 interface DownloadLinkProps {
   url: string
   filename: string
@@ -10,13 +12,9 @@ export default function DownloadLink({ url, filename, label, icon = '⬇️' }: 
     <a
       href={url}
       download={filename}
-      className="
-        inline-flex items-center justify-center gap-2 px-4 py-2.5
-        bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-sm font-semibold
-        rounded-xl shadow transition-all duration-150
-      "
+      className="download-button"
     >
-      <span>{icon}</span>
+      <Icon name="download" size={16} />
       <span>{label}</span>
     </a>
   )

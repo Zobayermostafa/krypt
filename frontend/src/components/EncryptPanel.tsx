@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DropZone from './DropZone'
 import Spinner from './Spinner'
 import DownloadLink from './DownloadLink'
+import Icon from './Icon'
 
 interface EncryptResult {
   session_id: string
@@ -20,6 +21,14 @@ export default function EncryptPanel() {
   const [copied1, setCopied1] = useState(false)
   const [copied2, setCopied2] = useState(false)
   const [copiedAll, setCopiedAll] = useState(false)
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!image) { setOriginalUrl(null); return }
+    const url = URL.createObjectURL(image)
+    setOriginalUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [image])
 
   const handleEncrypt = async () => {
     if (!image) return
@@ -48,7 +57,7 @@ export default function EncryptPanel() {
 
   const downloadKeys = () => {
     if (!result) return
-    const content = `Key 1 (Spatial Mask):\n${result.key1}\n\nKey 2 (Fourier Mask):\n${result.key2}\n`
+    const content = `Key 1:\n${result.key1}\n\nKey 2:\n${result.key2}\n`
     const blob = new Blob([content], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -91,14 +100,14 @@ export default function EncryptPanel() {
           ) : (
             <button onClick={handleEncrypt} disabled={!image}
               className="w-full py-3.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-              🔒 Encrypt Photo
+              <span className="inline-flex items-center justify-center gap-2"><Icon name="lock" size={16} /> Encrypt Photo</span>
             </button>
           )}
         </div>
       ) : (
         <div className="space-y-6">
           <div className="rounded-xl bg-emerald-950/40 border border-emerald-700/60 p-5">
-            <p className="text-base font-bold text-emerald-400">🎉 Encryption Complete!</p>
+            <p className="text-base font-bold text-emerald-400">Encryption Complete!</p>
             <p className="text-xs text-emerald-300/80 mt-1">{result.message}</p>
           </div>
 
@@ -113,18 +122,18 @@ export default function EncryptPanel() {
             {/* Key 1 */}
             <div className="space-y-2 p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-white-400 uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
-                  Key 1 (Spatial Mask)
+                  Key 1
                 </span>
                 <button
                   onClick={() => copyText(result.key1, setCopied1)}
                   className="text-xs text-gray-300 hover:text-white px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded-md border border-gray-700 transition-all"
                 >
-                  {copied1 ? '✅ Copied' : '📋 Copy'}
+                  {copied1 ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <code className="block w-full break-all select-all rounded-lg bg-gray-950 border border-gray-700/80 px-3 py-2 text-xs text-indigo-300 font-mono">
+              <code className="block w-full break-all select-all rounded-lg bg-gray-950 border border-gray-700/80 px-3 py-2 text-xs text-white-300 font-mono">
                 {result.key1}
               </code>
             </div>
@@ -132,18 +141,18 @@ export default function EncryptPanel() {
             {/* Key 2 */}
             <div className="space-y-2 p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-white-400 uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
-                  Key 2 (Fourier Mask)
+                  Key 2
                 </span>
                 <button
                   onClick={() => copyText(result.key2, setCopied2)}
                   className="text-xs text-gray-300 hover:text-white px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded-md border border-gray-700 transition-all"
                 >
-                  {copied2 ? '✅ Copied' : '📋 Copy'}
+                  {copied2 ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <code className="block w-full break-all select-all rounded-lg bg-gray-950 border border-gray-700/80 px-3 py-2 text-xs text-purple-300 font-mono">
+              <code className="block w-full break-all select-all rounded-lg bg-gray-950 border border-gray-700/80 px-3 py-2 text-xs text-white-300 font-mono">
                 {result.key2}
               </code>
             </div>
@@ -153,13 +162,13 @@ export default function EncryptPanel() {
                 onClick={() => copyText(`${result.key1}\n${result.key2}`, setCopiedAll)}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-white text-sm font-semibold rounded-xl border border-gray-700 transition-all"
               >
-                {copiedAll ? '✅ Copied Both' : '📋 Copy Both Keys'}
+                {copiedAll ? 'Copied Both' : 'Copy Both Keys'}
               </button>
               <button
                 onClick={downloadKeys}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-white text-sm font-semibold rounded-xl border border-gray-700 transition-all"
               >
-                🔑 Save keys (.txt)
+                Save keys (.txt)
               </button>
             </div>
 
@@ -169,10 +178,24 @@ export default function EncryptPanel() {
           </div>
 
           <div className="rounded-xl bg-gray-950/60 border border-gray-800 p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-gray-200">Encrypted image</h3>
-            <p className="text-xs text-gray-500">Available for about 10 minutes, so download it now.</p>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-200">Result preview</h3>
+              <p className="text-xs text-gray-500 mt-1">The encrypted image should look like noise. Download it before this session expires.</p>
+            </div>
+            <div className="result-preview-grid">
+              <figure className="result-preview">
+                {originalUrl && <img src={originalUrl} alt="Original upload" />}
+                <figcaption>Original upload <span>Source</span></figcaption>
+              </figure>
+              <figure className="result-preview">
+                <img src={result.files.encrypted_image} alt="Encrypted result" />
+                <figcaption>Encrypted result <span>DRPE output</span></figcaption>
+              </figure>
+            </div>
             <DownloadLink url={result.files.encrypted_image} filename="encrypted.png" label="Download Encrypted Image" icon="🖼️" />
           </div>
+
+          <div className="info-callout"><Icon name="info" size={15} /><span>Keep both keys together with the encrypted file. Key 1 unlocks the spatial phase mask; Key 2 unlocks the Fourier-domain phase mask.</span></div>
 
           {error && (
             <div className="rounded-xl bg-red-950/40 border border-red-700/60 p-4 text-sm text-red-300">
