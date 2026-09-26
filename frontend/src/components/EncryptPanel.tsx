@@ -111,6 +111,26 @@ export default function EncryptPanel() {
             <p className="text-xs text-emerald-300/80 mt-1">{result.message}</p>
           </div>
 
+          
+
+          <div className="rounded-xl bg-gray-950/60 border border-gray-800 p-6 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-200">Result preview</h3>
+              <p className="text-xs text-gray-500 mt-1">The encrypted image should look like noise. Download it before this session expires.</p>
+            </div>
+            <div className="result-preview-grid">
+              <figure className="result-preview">
+                {originalUrl && <img src={originalUrl} alt="Original upload" />}
+                <figcaption>Original upload <span>Source</span></figcaption>
+              </figure>
+              <figure className="result-preview">
+                <img src={result.files.encrypted_image} alt="Encrypted result" />
+                <figcaption>Encrypted result <span>DRPE output</span></figcaption>
+              </figure>
+            </div>
+            <DownloadLink url={result.files.encrypted_image} filename="encrypted.png" label="Download Encrypted Image" icon="🖼️" />
+          </div>
+
           <div className="rounded-xl bg-gray-950/60 border border-gray-800 p-6 space-y-5">
             <div>
               <h3 className="text-base font-semibold text-gray-200">Your Two Secret Keys</h3>
@@ -172,27 +192,9 @@ export default function EncryptPanel() {
               </button>
             </div>
 
-            <div className="rounded-lg bg-amber-950/30 border border-amber-700/40 p-3 text-xs text-amber-300/90">
+            <div className="rounded-lg bg-amber-950/30 border border-amber-700/40 p-3 text-xs text-white-300/90">
               ⚠️ <strong>Save both keys now.</strong> They are not stored on the server. If either key is lost, the image cannot be recovered.
             </div>
-          </div>
-
-          <div className="rounded-xl bg-gray-950/60 border border-gray-800 p-6 space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-200">Result preview</h3>
-              <p className="text-xs text-gray-500 mt-1">The encrypted image should look like noise. Download it before this session expires.</p>
-            </div>
-            <div className="result-preview-grid">
-              <figure className="result-preview">
-                {originalUrl && <img src={originalUrl} alt="Original upload" />}
-                <figcaption>Original upload <span>Source</span></figcaption>
-              </figure>
-              <figure className="result-preview">
-                <img src={result.files.encrypted_image} alt="Encrypted result" />
-                <figcaption>Encrypted result <span>DRPE output</span></figcaption>
-              </figure>
-            </div>
-            <DownloadLink url={result.files.encrypted_image} filename="encrypted.png" label="Download Encrypted Image" icon="🖼️" />
           </div>
 
           <div className="info-callout"><Icon name="info" size={15} /><span>Keep both keys together with the encrypted file. Key 1 unlocks the spatial phase mask; Key 2 unlocks the Fourier-domain phase mask.</span></div>

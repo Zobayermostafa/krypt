@@ -41,14 +41,13 @@ export default function DecryptPanel() {
     const file = e.target.files?.[0]
     if (!file) return
     const text = await file.text()
-    // Auto-detect if file contains both keys or single key
-    const m1Match = text.match(/drpe1-m1-[A-Za-z0-9_-]{47}/)
-    const m2Match = text.match(/drpe1-m2-[A-Za-z0-9_-]{47}/)
+    // Auto-detect the first two anonymous keys in the file
+    const matches = text.match(/[A-Za-z0-9_-]{43}/g) ?? []
 
-    if (m1Match) setKey1(m1Match[0])
-    if (m2Match) setKey2(m2Match[0])
+    if (matches[0]) setKey1(matches[0])
+    if (matches[1]) setKey2(matches[1])
 
-    if (!m1Match && !m2Match) {
+    if (!matches.length) {
       // Fallback: split by lines
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
       if (lines[0]) setKey1(lines[0])
@@ -61,18 +60,14 @@ export default function DecryptPanel() {
   const getKey1Warning = () => {
     const k = key1.trim()
     if (!k) return null
-    if (k.startsWith('drpe1-m2-')) return '⚠️ This looks like Key 2 (Fourier mask)! Put it in the Key 2 field.'
-    if (!k.startsWith('drpe1-m1-')) return '⚠️ Key 1 must start with drpe1-m1-'
-    if (k.length !== 56) return `⚠️ Expected 56 chars, currently ${k.length}`
+    if (k.length !== 43) return `⚠️ Expected 43 chars, currently ${k.length}`
     return null
   }
 
   const getKey2Warning = () => {
     const k = key2.trim()
     if (!k) return null
-    if (k.startsWith('drpe1-m1-')) return '⚠️ This looks like Key 1 (Spatial mask)! Put it in the Key 1 field.'
-    if (!k.startsWith('drpe1-m2-')) return '⚠️ Key 2 must start with drpe1-m2-'
-    if (k.length !== 56) return `⚠️ Expected 56 chars, currently ${k.length}`
+    if (k.length !== 43) return `⚠️ Expected 43 chars, currently ${k.length}`
     return null
   }
 
@@ -105,23 +100,23 @@ export default function DecryptPanel() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-200">Decryption Keys</span>
               <label className="text-xs text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer">
-                📂 Load keys from file
+                Load keys from file
                 <input type="file" accept=".txt,text/plain" className="hidden" onChange={onKeyFile} />
               </label>
             </div>
 
             {/* Key 1 */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="drpe-key1" className="text-xs font-semibold text-indigo-400 flex items-center gap-1.5">
+              <label htmlFor="drpe-key1" className="text-xs font-semibold text-white-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
-                Key 1 (Spatial Mask)
+                Key 1
               </label>
               <input
                 id="drpe-key1"
                 type="text"
                 value={key1}
                 onChange={(e) => setKey1(e.target.value.trim())}
-                placeholder="drpe1-m1-…"
+                placeholder="43-character key"
                 spellCheck={false}
                 autoComplete="off"
                 className={`w-full rounded-xl bg-gray-900/60 border ${
@@ -133,16 +128,16 @@ export default function DecryptPanel() {
 
             {/* Key 2 */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="drpe-key2" className="text-xs font-semibold text-purple-400 flex items-center gap-1.5">
+              <label htmlFor="drpe-key2" className="text-xs font-semibold text-white-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
-                Key 2 (Fourier Mask)
+                Key 2
               </label>
               <input
                 id="drpe-key2"
                 type="text"
                 value={key2}
                 onChange={(e) => setKey2(e.target.value.trim())}
-                placeholder="drpe1-m2-…"
+                placeholder="43-character key"
                 spellCheck={false}
                 autoComplete="off"
                 className={`w-full rounded-xl bg-gray-900/60 border ${

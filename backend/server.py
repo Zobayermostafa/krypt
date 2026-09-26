@@ -1,7 +1,7 @@
 """
 DRPE Web Backend - FastAPI Server
 
-Keys are compact: encryption generates a random 256-bit key (drpe1-...) and both
+Keys are compact: encryption generates two random 256-bit keys and both
 phase masks are derived from it (see keys.py). No key files are stored or uploaded.
 
 Endpoints:
@@ -289,12 +289,12 @@ async def api_encrypt(
 async def api_decrypt(
     background_tasks: BackgroundTasks,
     encrypted_image: UploadFile = File(..., description="Encrypted .png file"),
-    key1: str = Form(..., description="Key 1 string starting with drpe1-m1-"),
-    key2: str = Form(..., description="Key 2 string starting with drpe1-m2-"),
+    key1: str = Form(..., description="First anonymous DRPE key"),
+    key2: str = Form(..., description="Second anonymous DRPE key"),
 ):
     try:
-        seed1 = parse_key(key1, expected_mask_index=1)
-        seed2 = parse_key(key2, expected_mask_index=2)
+        seed1 = parse_key(key1)
+        seed2 = parse_key(key2)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Invalid key: {exc}")
 
